@@ -40,10 +40,10 @@ git clone https://github.com/faiak/alami-test.git
 ```
 
 2. If NodeJS is not installed, install [NVM](https://github.com/creationix/nvm) and then run `nvm install 8 && nvm alias default node`
-3.  Navigate to the app folder and install the Module
+3.  Navigate to the app folder and install the package
 
 ```bash
-npm install
+npm install && cd ios && pod install && cd ..
 ```
 
 6. Run the application on a device
