@@ -36,7 +36,7 @@ kembali
 1. Clone this repo
 
 ```bash
-git clone git@github.com:faiak/alami-test.git
+git clone https://github.com/faiak/alami-test.git
 ```
 
 2. If NodeJS is not installed, install [NVM](https://github.com/creationix/nvm) and then run `nvm install 8 && nvm alias default node`
