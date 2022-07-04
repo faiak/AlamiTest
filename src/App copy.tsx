@@ -4,8 +4,7 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  Text,
-  RefreshControl,
+  Animated,
 } from 'react-native'
 import {
   NavigationState,
@@ -14,15 +13,8 @@ import {
   SceneRendererProps,
   TabViewProps,
 } from 'react-native-tab-view'
-import { HFlatList, HScrollView } from 'react-native-head-tab-view'
+import { HScrollView } from 'react-native-head-tab-view'
 import { CollapsibleHeaderTabView } from 'react-native-tab-view-collapsible-header'
-
-const generateColor = () => {
-  const randomColor = Math.floor(Math.random() * 16777215)
-    .toString(16)
-    .padStart(6, '0')
-  return `#${randomColor}`
-}
 
 const FirstRoute = () => (
   <HScrollView index={0} showsVerticalScrollIndicator={false}>
@@ -41,78 +33,15 @@ const FirstRoute = () => (
   </HScrollView>
 )
 
-const SecondRoute = () => {
-  const [loading, setLoading] = React.useState(false)
-  return (
-    <HFlatList
-      onRefresh={() => {
-        setLoading(true)
-        setTimeout(() => {
-          setLoading(false)
-        }, 2000)
-        console.log('flatlist refresh')
-      }}
-      isRefreshing={loading}
-      refreshing={loading}
-      renderRefreshControl={() => (
-        <View style={{ width: 50, height: 50, backgroundColor: 'blue' }} />
-      )}
-      refreshControl={
-        <RefreshControl
-          refreshing={loading}
-          onRefresh={() => {
-            setLoading(true)
-            setTimeout(() => {
-              setLoading(false)
-            }, 2000)
-          }}
-        />
-      }
-      index={1}
-      showsVerticalScrollIndicator={false}
-      data={[
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-      ]}
-      renderItem={({ index }) => {
-        return (
-          <View style={{ margin: 10, backgroundColor: generateColor() }}>
-            <Text style={{ padding: 20 }}>{index}</Text>
-          </View>
-        )
-      }}
-    />
-  )
-}
+const SecondRoute = () => (
+  <HScrollView index={1} showsVerticalScrollIndicator={false}>
+    <View style={[styles.scene, { backgroundColor: '#673ab7' }]} />
+  </HScrollView>
+)
 
 const TRoute = () => (
   <HScrollView index={2} showsVerticalScrollIndicator={false}>
-    <View style={[styles.scene, { backgroundColor: 'pink' }]} />
+    <View style={[styles.scene, { backgroundColor: '#673ab7' }]} />
   </HScrollView>
 )
 
@@ -132,37 +61,75 @@ export default function TabViewExample() {
     t: TRoute,
   })
 
+  const widthContent = React.useRef(0)
+  const heightItem = React.useRef([])
+
+  const onLayoutWrap = React.useCallback(e => {
+    widthContent.current = e.nativeEvent.layout.width
+  }, [])
+  const onLayoutHeightWrap = React.useCallback(e => {
+    heightItem.current = {
+      width: e.nativeEvent.layout.width,
+      height: e.nativeEvent.layout.height,
+    }
+  }, [])
+
   const renderTabBar = (
     props: SceneRendererProps & {
       navigationState: NavigationState<Route>
     },
   ) => {
+    const inputRange = props.navigationState.routes.map((x, i) => i)
+    const transformCell = props.position.interpolate({
+      inputRange,
+      outputRange: routes.map(
+        (_, i) => (i - 1) * (widthContent.current / routes.length),
+      ),
+    })
+
+    const styleMarker = {
+      margin: 8,
+      borderRadius: 40,
+      height: heightItem.current?.height,
+      position: 'absolute',
+      backgroundColor: 'red',
+      width: heightItem.current?.width,
+      left: `${100 / routes.length}%`,
+      transform: [{ translateX: transformCell }],
+    }
+
     return (
       <View style={{ backgroundColor: 'white' }}>
         <View
-          style={{
-            flexDirection: 'row',
-            backgroundColor: 'green',
-            margin: 20,
-            borderRadius: 99,
-          }}
+          style={[
+            styles.tabBar,
+            // styleMarker,
+          ]}
+          onLayout={onLayoutWrap}
         >
+          <Animated.View style={styleMarker} />
           {props.navigationState.routes.map((route, i) => {
+            const opacity = props.position.interpolate({
+              inputRange,
+              outputRange: inputRange.map(inputIndex =>
+                inputIndex === i ? 1 : 0.5,
+              ),
+            })
+
             return (
               <TouchableOpacity
-                key={`tabItem_${i}`}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  margin: 8,
-                  backgroundColor: i === index ? 'white' : 'transparent',
-                  borderRadius: 99,
-                }}
+                onLayout={onLayoutHeightWrap}
+                style={[
+                  styles.tabItem,
+                  {
+                    // backgroundColor: i === index ? 'white' : 'transparent',
+                    margin: 8,
+                    borderRadius: 99,
+                  },
+                ]}
                 onPress={() => setIndex(i)}
               >
-                <Text>{route.title}</Text>
+                <Animated.Text style={{ opacity }}>{route.title}</Animated.Text>
               </TouchableOpacity>
             )
           })}
@@ -171,20 +138,8 @@ export default function TabViewExample() {
     )
   }
 
-  const [loading, setLoading] = React.useState(false)
-
   return (
     <CollapsibleHeaderTabView
-      isRefreshing={loading}
-      refreshHeight={100}
-      onStartRefresh={() => {
-        setLoading(true)
-        setTimeout(() => {
-          setLoading(false)
-        }, 2000)
-        console.log('asdsadasd')
-      }}
-      enableSnap={true}
       renderScrollHeader={() => (
         <View style={{ height: 200, backgroundColor: 'red' }} />
       )}
@@ -193,7 +148,6 @@ export default function TabViewExample() {
       onIndexChange={setIndex}
       initialLayout={initialLayout}
       renderTabBar={renderTabBar}
-      scrollEnabled
     />
   )
 }
@@ -201,5 +155,16 @@ export default function TabViewExample() {
 const styles = StyleSheet.create({
   scene: {
     flex: 1,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'green',
+    margin: 20,
+    borderRadius: 99,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
   },
 })
